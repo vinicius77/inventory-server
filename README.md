@@ -24,3 +24,10 @@ INSERT INTO products VALUES(
   200.00
 );
 ```
+
+##### go get Dependencies
+
+```bash
+go get github.com/go-sql-driver/mysql
+go get github.com/gorilla/mux
+```
