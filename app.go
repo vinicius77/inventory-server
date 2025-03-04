@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,7 +18,8 @@ type App struct {
 
 func (app *App) InitialiseDB(DBUser string, DBPass string, DBName string) error {
 	connectionString := fmt.Sprintf("%v:%v@tcp(127.0.0.1:3306)/%v", DBUser, DBPass, DBName)
-	_, err := sql.Open("mysql", connectionString)
+	var err error
+	app.DB, err = sql.Open("mysql", connectionString) // Assign to app.DB
 
 	if err != nil {
 		return err
@@ -34,15 +36,28 @@ func (app *App) Run(addr string) {
 	log.Fatal(http.ListenAndServe(addr, app.Router))
 }
 
-// private to app.go file
 func (app *App) getProducts(w http.ResponseWriter, r *http.Request) {
+	products, err := getProducts(app.DB)
 
-	var response []byte
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	sendResponse(w, http.StatusOK, products)
+}
+
+func sendError(w http.ResponseWriter, statusCode int, err string) {
+	error_message := map[string]string{"error": err}
+	sendResponse(w, statusCode, error_message)
+}
+
+func sendResponse(w http.ResponseWriter, statusCode int, payload interface{}) {
+	response, _ := json.Marshal(payload)
 
 	w.Header().Set("Content-type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(statusCode)
 	w.Write(response)
-
 }
 
 func (app *App) handleRoutes() {
